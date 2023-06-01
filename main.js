@@ -9,17 +9,20 @@ let lightPositionEl;
 let stereoCamera;
 let rotationMatrix;
 
+let sphereVertices, sphereUvs;
+let vertices, uvs;
+
+let audio = {};
+
 function deg2rad(angle) {
     return angle * Math.PI / 180;
 }
 
 
 // Constructor
-function Model(name) {
-    this.name = name;
-    this.count = 0;
+function Model() {
 
-    this.BufferData = function(vertices, texcoords) {
+    this.BufferData = function() {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         // vertices
@@ -33,7 +36,7 @@ function Model(name) {
         // texcoords
         const tBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STREAM_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STREAM_DRAW);
         gl.enableVertexAttribArray(shProgram.iAttribTexcoord);
         gl.vertexAttribPointer(shProgram.iAttribTexcoord, 2, gl.FLOAT, false, 0, 0);
 
@@ -231,10 +234,15 @@ function initGL() {
     shProgram.ITextureRotAngleDeg      = gl.getUniformLocation(prog, 'textureRotAngleDeg');
 
 
+    surface = new Model();
+    const data =  CreateSurfaceData();
+    const sData = createSphereData();
+    vertices = data.vertices;
+    uvs = data.texcoords;
+    sphereVertices = sData.sphereVertices;
+    sphereUvs = sData.sphereUvs;
 
-    surface = new Model('Surface');
-    const {vertices, texcoords} = CreateSurfaceData();
-    surface.BufferData(vertices, texcoords);
+    surface.BufferData();
 
     const ap = gl.canvas.width / gl.canvas.height;
 
@@ -282,6 +290,41 @@ function createProgram(gl, vShader, fShader) {
     return prog;
 }
 
+function createSphereData() {
+  const radius = 0.2;
+  const horizontalPieces = 16;
+  const verticalPieces = 16;
+  const sphereVertices = [];
+  const sphereUvs = [];
+
+  for(let stackNumber = 0; stackNumber <= verticalPieces; stackNumber++) {
+    const theta = stackNumber * Math.PI / verticalPieces;
+    const nextTheta = (stackNumber + 1) * Math.PI / verticalPieces;
+
+    for(let sliceNumber = 0; sliceNumber <= horizontalPieces; sliceNumber++) {
+      const phi = sliceNumber * 2 * Math.PI / horizontalPieces;
+      const nextPhi = (sliceNumber + 1) * 2 * Math.PI / horizontalPieces;
+      const x1 = radius * Math.sin(theta) * Math.cos(phi);
+      const y1 = radius * Math.cos(theta);
+      const z1 = radius * Math.sin(theta) * Math.sin(phi);
+      const u1 = sliceNumber / horizontalPieces;
+      const v1 = stackNumber / verticalPieces;
+      const x2 = radius * Math.sin(nextTheta) * Math.cos(nextPhi);
+      const y2 = radius * Math.cos(nextTheta);
+      const z2 = radius * Math.sin(nextTheta) * Math.sin(nextPhi);
+      const u2 = (sliceNumber + 1) / horizontalPieces;
+      const v2 = (stackNumber + 1) / verticalPieces;
+
+      const offset = 1.4;
+      sphereVertices.push(x1 + offset, y1, z1 + offset);
+      sphereVertices.push(x2 + offset, y2, z2 + offset);
+      sphereUvs.push(u1, v1);
+      sphereUvs.push(u2, v2);
+    }
+  }
+
+  return { sphereVertices, sphereUvs };
+}
 
 /**
  * initialization function that will be called when the page has loaded
