@@ -463,9 +463,18 @@ function init() {
     if ("Magnetometer" in window) {
       const magSensor = new Magnetometer({ frequency: 60 });
       magSensor.addEventListener("reading", () => {
-        const rotationY = Math.atan2(magSensor.x, magSensor.z);
-        const rotationMat = m4.yRotation(rotationY);
-        rotationMatrix = rotationMat;
+        const rotationX = Math.atan2(accelerometer.y, accelerometer.z);
+        const rotationY = Math.atan2(accelerometer.x, accelerometer.z);
+        const rotationZ = Math.atan2(accelerometer.y, accelerometer.x);
+        const mX = m4.xRotation(rotationX);
+        const mY = m4.yRotation(rotationY);
+        const mZ = m4.zRotation(rotationZ);
+        const acc = m4.multiply(mX, mY);
+        rotationMatrix = m4.multiply(acc, mZ);
+
+        if (window.setAudioPosition) {
+          setAudioPosition(rotationX, rotationY, rotationZ);
+        }
 
         draw();
       });
@@ -476,6 +485,51 @@ function init() {
     }
 
     draw();
+    initCheckBox();
+    initAudio();
+}
+
+async function initAudio() {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  const audioContext = new AudioContext();
+  const decodedAudioData = await fetch("/music.mp3")
+    .then(response => response.arrayBuffer())
+    .then(audioData => audioContext.decodeAudioData(audioData));
+
+  const source = audioContext.createBufferSource();
+  source.buffer = decodedAudioData;
+  source.connect(audioContext.destination);
+  source.start();
+  const panner = audioContext.createPanner();
+  const volume = audioContext.createGain();
+  volume.connect(panner);
+  const highpass = audioContext.createBiquadFilter();
+  highpass.type = "notch";
+  highpass.frequency.value = 500;
+
+  audio.panner = panner;
+  audio.context = audioContext;
+  audio.filter = highpass;
+  audio.source = source;
+  source.connect(highpass);
+
+  window.setAudioPosition = (x, y, z) => {
+    panner.positionX.value = x;
+    panner.positionY.value = y;
+    panner.positionZ.value = z;
+  }
+}
+
+function initCheckBox() {
+  const toggle = document.querySelector("#toggleFilter");
+
+  toggle.onchange = e => {
+    if (e.target.checked) {
+      audio.filter.connect(audio.context.destination);
+    } else {
+      audio.filter.disconnect();
+    }
+  }
 }
 
 function setTexture(gl, image) {
