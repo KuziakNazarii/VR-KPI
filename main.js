@@ -21,31 +21,21 @@ function deg2rad(angle) {
 
 // Constructor
 function Model() {
-
     this.BufferData = function() {
+        const allVertices = vertices.concat(sphereVertices);
+        const allUvs = uvs.concat(sphereUvs);
+        const allBuffer = allVertices.concat(allUvs);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         // vertices
         const vBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(allBuffer), gl.STREAM_DRAW);
+
         gl.enableVertexAttribArray(shProgram.iAttribVertex);
         gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
 
-        this.count = vertices.length/3;
-        // texcoords
-        const tBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STREAM_DRAW);
         gl.enableVertexAttribArray(shProgram.iAttribTexcoord);
-        gl.vertexAttribPointer(shProgram.iAttribTexcoord, 2, gl.FLOAT, false, 0, 0);
-
-        this.count = vertices.length / 3;
-        this.vertices = vertices;
-    }
-
-    this.Draw = function() {
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.count);
+        gl.vertexAttribPointer(shProgram.iAttribTexcoord, 2, gl.FLOAT, false, 0, allVertices * 4);
     }
 }
 
@@ -133,8 +123,8 @@ function drawLeft() {
 
     gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix);
 
-    surface.Draw();
-
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, (vertices.length + sphereVertices.length) / 3);
+    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length / 3);
 }
 
 function drawRight() {
@@ -164,7 +154,9 @@ function drawRight() {
 
     gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix);
 
-    surface.Draw();
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, (vertices.length + sphereVertices.length) / 3);
+    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length / 3);
+    // gl.drawArrays(gl.TRIANGLE_STRIP, vertices.length / 3, sphereVertices / 3);
 }
 
 function draw() { 
@@ -291,7 +283,8 @@ function createProgram(gl, vShader, fShader) {
 }
 
 function createSphereData() {
-  const radius = 0.2;
+  const offset = 0.6;
+  const radius = 0.15;
   const horizontalPieces = 16;
   const verticalPieces = 16;
   const sphereVertices = [];
@@ -315,9 +308,8 @@ function createSphereData() {
       const u2 = (sliceNumber + 1) / horizontalPieces;
       const v2 = (stackNumber + 1) / verticalPieces;
 
-      const offset = 1.4;
-      sphereVertices.push(x1 + offset, y1, z1 + offset);
-      sphereVertices.push(x2 + offset, y2, z2 + offset);
+      sphereVertices.push(x1 + offset, y1 + offset, z1 + offset);
+      sphereVertices.push(x2 + offset, y2 + offset, z2 + offset);
       sphereUvs.push(u1, v1);
       sphereUvs.push(u2, v2);
     }
