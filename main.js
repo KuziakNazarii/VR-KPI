@@ -108,12 +108,9 @@ function drawLeft() {
 
     let matAccum0 = m4.multiply(rotateToPointZero, modelView );
     let matAccum1 = m4.multiply(translateToPointZero, matAccum0 );
-    if (rotationMatrix) {
-      matAccum1 = m4.multiply(matAccum1, rotationMatrix);
-    }
 
-    const modelviewInv = m4.inverse(matAccum1, new Float32Array(16));
-    const normalMatrix = m4.transpose(modelviewInv, new Float32Array(16));
+    let modelviewInv = m4.inverse(matAccum1, new Float32Array(16));
+    let normalMatrix = m4.transpose(modelviewInv, new Float32Array(16));
         
     /* Multiply the projection matrix times the modelview matrix to give the
        combined transformation matrix, and send that to the shader program. */
@@ -123,8 +120,21 @@ function drawLeft() {
 
     gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix);
 
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, (vertices.length + sphereVertices.length) / 3);
-    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length / 3);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length / 3);
+
+
+
+    if (rotationMatrix) {
+      matAccum1 = m4.multiply(matAccum1, rotationMatrix);
+    }
+
+    modelviewInv = m4.inverse(matAccum1, new Float32Array(16));
+    normalMatrix = m4.transpose(modelviewInv, new Float32Array(16));
+    modelViewProjection = m4.multiply(projection, matAccum1 );
+    gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false, modelViewProjection );
+    gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, vertices.length / 3, sphereVertices.length / 3);
 }
 
 function drawRight() {
@@ -143,8 +153,8 @@ function drawRight() {
       matAccum1 = m4.multiply(matAccum1, rotationMatrix);
     }
 
-    const modelviewInv = m4.inverse(matAccum1, new Float32Array(16));
-    const normalMatrix = m4.transpose(modelviewInv, new Float32Array(16));
+    let modelviewInv = m4.inverse(matAccum1, new Float32Array(16));
+    let normalMatrix = m4.transpose(modelviewInv, new Float32Array(16));
         
     /* Multiply the projection matrix times the modelview matrix to give the
        combined transformation matrix, and send that to the shader program. */
@@ -154,9 +164,23 @@ function drawRight() {
 
     gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix);
 
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, (vertices.length + sphereVertices.length) / 3);
-    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length / 3);
-    // gl.drawArrays(gl.TRIANGLE_STRIP, vertices.length / 3, sphereVertices / 3);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length / 3);
+
+
+
+
+    if (rotationMatrix) {
+      matAccum1 = m4.multiply(matAccum1, rotationMatrix);
+    }
+
+    modelviewInv = m4.inverse(matAccum1, new Float32Array(16));
+    normalMatrix = m4.transpose(modelviewInv, new Float32Array(16));
+        
+    modelViewProjection = m4.multiply(projection, matAccum1 );
+    gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false, modelViewProjection );
+    gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, vertices.length / 3, sphereVertices.length / 3);
 }
 
 function draw() { 
@@ -490,9 +514,9 @@ function init() {
 }
 
 async function initAudio() {
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  await new Promise(resolve => setTimeout(resolve, 2500));
   const audioContext = new AudioContext();
-  const decodedAudioData = await fetch("/music.mp3")
+  const decodedAudioData = await fetch("/VR-KPI/music.mp3")
     .then(response => response.arrayBuffer())
     .then(audioData => audioContext.decodeAudioData(audioData));
 
